@@ -38,26 +38,24 @@
       width: 100%;
     }
 
-    .locked {
-      background: #16a34a;
-    }
+    .locked { background: #16a34a; }
+    .unlocked { background: #4ade80; }
 
-    .unlocked {
-      background: #4ade80;
-    }
-
-    button:hover {
-      opacity: 0.9;
+    button:disabled {
+      background: gray;
+      cursor: not-allowed;
     }
 
     .wallet-info {
       margin-top: 20px;
-      font-weight: bold;
     }
 
-    #solTicker {
-      margin-top: 10px;
-      font-size: 18px;
+    #stakedList {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #22c55e;
+      border-radius: 10px;
+      background: #0f172a;
     }
   </style>
 </head>
@@ -68,37 +66,36 @@
   <h1>🌿 Kush Kards Staking</h1>
   <p>Choose your staking strategy. Earn $SEEDS.</p>
 
-  <!-- 15 DAY LOCK -->
   <div class="card">
     <h3>🔒 15 Day Lock</h3>
-    <p>Earn 1.5x rewards</p>
-    <button class="locked" onclick="stake('15 Day Lock', 1.5)">
-      Stake 15 Days
-    </button>
+    <p>1.5x Rewards</p>
+    <button id="stake15" class="locked" onclick="startStake('15', 15, 1.5)">Stake 15 Days</button>
+    <p id="timer15"></p>
   </div>
 
-  <!-- 30 DAY LOCK -->
   <div class="card">
     <h3>🔒 30 Day Lock</h3>
-    <p>Earn 2x rewards</p>
-    <button class="locked" onclick="stake('30 Day Lock', 2)">
-      Stake 30 Days
-    </button>
+    <p>2x Rewards</p>
+    <button id="stake30" class="locked" onclick="startStake('30', 30, 2)">Stake 30 Days</button>
+    <p id="timer30"></p>
   </div>
 
-  <!-- FLEXIBLE -->
   <div class="card">
     <h3>🔓 Flexible</h3>
-    <p>Earn 1x rewards (no lock)</p>
-    <button class="unlocked" onclick="stake('Flexible', 1)">
-      Flexible Stake
-    </button>
+    <p>1x Rewards</p>
+    <button class="unlocked" onclick="flexStake()">Flexible Stake</button>
   </div>
 
   <h2 id="rewards">$SEEDS Earned: 420</h2>
   <button onclick="claimRewards()">Claim Rewards</button>
 
-  <!-- Wallet Section -->
+  <!-- STAKED NFT DISPLAY -->
+  <div id="stakedList">
+    <h3>📦 Currently Staked</h3>
+    <div id="stakedItems">None</div>
+  </div>
+
+  <!-- Wallet -->
   <div class="wallet-info">
     <button id="connectSolana">Connect Solana Wallet</button>
     <div id="walletAddress"></div>
@@ -107,7 +104,7 @@
   </div>
 </div>
 
-<!-- Solana Scripts -->
+<!-- SOLANA -->
 <script type="module">
   import { PhantomWalletAdapter } from "https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-wallets/dist/index.js";
   import { Connection, clusterApiUrl, LAMPORTS_PER_SOL } from "https://cdn.jsdelivr.net/npm/@solana/web3.js@1.73.0/dist/index.min.js";
@@ -115,62 +112,101 @@
   const wallet = new PhantomWalletAdapter();
   const connection = new Connection(clusterApiUrl("mainnet-beta"));
 
-  async function updateBalance() {
-    if (wallet.publicKey) {
-      const balanceLamports = await connection.getBalance(wallet.publicKey);
-      const balanceSOL = balanceLamports / LAMPORTS_PER_SOL;
-      document.getElementById("walletBalance").innerText =
-        "Balance: " + balanceSOL.toFixed(4) + " SOL";
-    }
-  }
+  document.getElementById("connectSolana").onclick = async () => {
+    await wallet.connect();
+    document.getElementById("walletAddress").innerText =
+      "Solana: " + wallet.publicKey.toString();
 
-  document.getElementById("connectSolana").addEventListener("click", async () => {
-    try {
-      await wallet.connect();
-      document.getElementById("walletAddress").innerText =
-        "Solana: " + wallet.publicKey.toString();
-      await updateBalance();
-    } catch (err) {
-      alert("Failed to connect wallet");
-    }
-  });
+    const bal = await connection.getBalance(wallet.publicKey);
+    document.getElementById("walletBalance").innerText =
+      "Balance: " + (bal / LAMPORTS_PER_SOL).toFixed(4) + " SOL";
+  };
 
   async function updateSOLPrice() {
-    try {
-      const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
-      const data = await res.json();
-      document.getElementById("solTicker").innerText =
-        "SOL Price: $" + data.solana.usd;
-    } catch {
-      document.getElementById("solTicker").innerText = "Price error";
-    }
+    const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
+    const data = await res.json();
+    document.getElementById("solTicker").innerText =
+      "SOL Price: $" + data.solana.usd;
   }
 
   updateSOLPrice();
   setInterval(updateSOLPrice, 15000);
 </script>
 
-<!-- Staking Logic -->
+<!-- STAKING SYSTEM -->
 <script>
   let totalRewards = 420;
+  let stakes = JSON.parse(localStorage.getItem("stakes")) || {};
 
-  function stake(type, multiplier) {
-    const base = 10;
-    const earned = base * multiplier;
+  function save() {
+    localStorage.setItem("stakes", JSON.stringify(stakes));
+  }
 
-    totalRewards += earned;
+  function startStake(id, days, multiplier) {
+    const endTime = Date.now() + days * 24 * 60 * 60 * 1000;
 
+    stakes[id] = {
+      end: endTime,
+      multiplier
+    };
+
+    save();
+    updateUI();
+  }
+
+  function flexStake() {
+    totalRewards += 10;
+    updateRewards();
+    alert("Flexible staking 🌿 +10 SEEDS");
+  }
+
+  function updateRewards() {
     document.getElementById("rewards").innerText =
       "$SEEDS Earned: " + totalRewards.toFixed(2);
-
-    alert(type + " activated 🌿\n+" + earned + " SEEDS");
   }
 
   function claimRewards() {
-    alert("Claimed " + totalRewards.toFixed(2) + " $SEEDS 🌿");
+    alert("Claimed " + totalRewards + " SEEDS 🌿");
     totalRewards = 0;
-    document.getElementById("rewards").innerText = "$SEEDS Earned: 0";
+    updateRewards();
   }
+
+  function updateUI() {
+    let list = "";
+
+    ["15", "30"].forEach(id => {
+      const stake = stakes[id];
+      const btn = document.getElementById("stake" + id);
+      const timer = document.getElementById("timer" + id);
+
+      if (stake) {
+        const timeLeft = stake.end - Date.now();
+
+        if (timeLeft > 0) {
+          btn.disabled = true;
+
+          const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+
+          timer.innerText = `⏳ ${days}d ${hours}h remaining`;
+          list += `<p>🔒 ${id}-Day Lock Active</p>`;
+        } else {
+          btn.disabled = false;
+          timer.innerText = "✅ Ready to claim";
+          totalRewards += 100 * stake.multiplier;
+          delete stakes[id];
+          save();
+        }
+      }
+    });
+
+    document.getElementById("stakedItems").innerHTML =
+      list || "None";
+  }
+
+  setInterval(updateUI, 1000);
+  updateUI();
+  updateRewards();
 </script>
 
 </body>
