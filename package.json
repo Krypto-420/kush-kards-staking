@@ -1,0 +1,16 @@
+{
+  "name": "kush-kards-staking",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@solana/web3.js": "^1.95.0",
+    "@solana/spl-token": "^0.3.11",
+    "@metaplex-foundation/js": "^0.19.5"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  }
+}
