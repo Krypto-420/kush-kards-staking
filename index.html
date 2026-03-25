@@ -24,22 +24,31 @@
       padding: 15px;
       margin: 10px;
       display: inline-block;
-      width: 200px;
+      width: 220px;
     }
 
     button {
       background: #22c55e;
       border: none;
-      padding: 10px;
-      margin-top: 10px;
+      padding: 8px;
+      margin-top: 6px;
       border-radius: 5px;
       cursor: pointer;
       color: black;
       font-weight: bold;
+      width: 100%;
     }
 
     button:hover {
       background: #16a34a;
+    }
+
+    .locked {
+      background: #16a34a;
+    }
+
+    .unlocked {
+      background: #4ade80;
     }
 
     .wallet-info {
@@ -60,26 +69,48 @@
 
 <div class="container">
   <h1>🌿 Kush Kards Staking</h1>
-
   <p>Stake your NFTs. Earn $SEEDS. Grow your stash.</p>
 
+  <!-- CARD 1 -->
   <div class="card">
     <h3>OG Blaze #1</h3>
     <p>🔥 Potency: 85</p>
-    <button>Stake</button>
+
+    <button class="locked" onclick="stake('OG Blaze #1', '15 Days Locked', 1.5)">
+      🔒 Stake 15 Days (1.5x Rewards)
+    </button>
+
+    <button class="locked" onclick="stake('OG Blaze #1', '30 Days Locked', 2)">
+      🔒 Stake 30 Days (2x Rewards)
+    </button>
+
+    <button class="unlocked" onclick="stake('OG Blaze #1', 'Flexible', 1)">
+      🔓 Flexible Staking (1x Rewards)
+    </button>
   </div>
 
+  <!-- CARD 2 -->
   <div class="card">
     <h3>Rainbow Kush #2</h3>
     <p>🌈 Potency: 120</p>
-    <button>Stake</button>
+
+    <button class="locked" onclick="stake('Rainbow Kush #2', '15 Days Locked', 1.5)">
+      🔒 Stake 15 Days (1.5x Rewards)
+    </button>
+
+    <button class="locked" onclick="stake('Rainbow Kush #2', '30 Days Locked', 2)">
+      🔒 Stake 30 Days (2x Rewards)
+    </button>
+
+    <button class="unlocked" onclick="stake('Rainbow Kush #2', 'Flexible', 1)">
+      🔓 Flexible Staking (1x Rewards)
+    </button>
   </div>
 
-  <h2>$SEEDS Earned: 420</h2>
+  <h2 id="rewards">$SEEDS Earned: 420</h2>
+  <button onclick="claimRewards()">Claim Rewards</button>
 
-  <button>Claim Rewards</button>
-
-  <!-- Solana Wallet Connect -->
+  <!-- Wallet Section -->
   <div class="wallet-info">
     <button id="connectSolana">Connect Solana Wallet</button>
     <div id="walletAddress"></div>
@@ -115,20 +146,41 @@
     }
   });
 
-  // SOL Price Ticker
   async function updateSOLPrice() {
     try {
       const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
       const data = await res.json();
       document.getElementById("solTicker").innerText = "SOL Price: $" + data.solana.usd;
     } catch (err) {
-      console.log(err);
       document.getElementById("solTicker").innerText = "Error fetching price";
     }
   }
 
   updateSOLPrice();
-  setInterval(updateSOLPrice, 15000); // refresh every 15 seconds
+  setInterval(updateSOLPrice, 15000);
+</script>
+
+<!-- Staking Logic -->
+<script>
+  let totalRewards = 420;
+
+  function stake(cardName, type, multiplier) {
+    const baseReward = 10; // base per stake click (demo)
+    const earned = baseReward * multiplier;
+
+    totalRewards += earned;
+
+    document.getElementById("rewards").innerText =
+      "$SEEDS Earned: " + totalRewards.toFixed(2);
+
+    alert(cardName + " staked with " + type + " 🌿\nEarned +" + earned + " SEEDS");
+  }
+
+  function claimRewards() {
+    alert("Rewards claimed: " + totalRewards.toFixed(2) + " $SEEDS 🌿");
+    totalRewards = 0;
+    document.getElementById("rewards").innerText = "$SEEDS Earned: 0";
+  }
 </script>
 
 </body>
