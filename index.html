@@ -1,166 +1,73 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Kush Kards 🌿 Battle Lab</title>
-
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+  <title>Kush Kards 🌿</title>
 
   <style>
     body {
       margin: 0;
       font-family: Arial;
-      color: #00ffcc;
-      background: radial-gradient(circle, #050505, #000);
-      overflow: hidden;
+      background: linear-gradient(135deg, #0f172a, #065f46);
+      color: white;
     }
 
-    /* 🌿 SMOKE ANIMATION */
-    .smoke {
-      position: fixed;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(0,255,150,0.08), transparent 70%);
-      animation: smokeMove 20s linear infinite;
-      z-index: -1;
-    }
-
-    @keyframes smokeMove {
-      from { transform: translateY(0); }
-      to { transform: translateY(-200px); }
-    }
-
-    h1 {
-      text-align: center;
-      text-shadow: 0 0 20px #00ffcc;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 20px;
-    }
-
-    .wallet-btn {
-      background: #00ffcc;
-      color: black;
-      padding: 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      border: none;
-    }
-
-    /* 🎮 GAME BOARD */
-    .game-board {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      height: 60vh;
-    }
-
-    .player {
+    .container {
+      padding: 20px;
       text-align: center;
     }
 
     .card {
-      background: rgba(0,0,0,0.8);
-      border: 2px solid #00ffcc;
+      background: #111;
+      border: 1px solid #22c55e;
       border-radius: 10px;
       padding: 15px;
-      width: 180px;
-      box-shadow: 0 0 20px #00ffcc55;
-    }
-
-    .vs {
-      font-size: 40px;
-      text-shadow: 0 0 20px #00ffcc;
-    }
-
-    /* 💰 DASHBOARD */
-    .dashboard {
-      text-align: center;
-      padding: 15px;
-      border-top: 1px solid #00ffcc33;
+      margin: 10px;
+      display: inline-block;
+      width: 200px;
     }
 
     button {
-      background: #00ffcc;
+      background: #22c55e;
       border: none;
-      padding: 8px;
-      margin-top: 8px;
+      padding: 10px;
+      margin-top: 10px;
       border-radius: 5px;
       cursor: pointer;
       color: black;
       font-weight: bold;
     }
 
+    button:hover {
+      background: #16a34a;
+    }
   </style>
 </head>
 
 <body>
 
-<div class="smoke"></div>
+<div class="container">
+  <h1>🌿 Kush Kards Staking</h1>
 
-<h1>🌿 Kush Kards Battle Lab</h1>
+  <p>Stake your NFTs. Earn $SEEDS. Grow your stash.</p>
 
-<div class="topbar">
-  <button class="wallet-btn" onclick="connectWallet()">Connect Phantom</button>
-  <div id="wallet"></div>
-</div>
-
-<!-- 🎮 GAME BOARD -->
-<div class="game-board">
-
-  <div class="player">
-    <div class="card">
-      <h3>OG Blaze</h3>
-      <p>🔥 Potency: 95</p>
-      <button>Attack 💨</button>
-    </div>
+  <div class="card">
+    <h3>OG Blaze #1</h3>
+    <p>🔥 Potency: 85</p>
+    <button>Stake</button>
   </div>
 
-  <div class="vs">VS</div>
-
-  <div class="player">
-    <div class="card">
-      <h3>Rainbow Kush</h3>
-      <p>🌈 Potency: 120</p>
-      <button>Defend 🛡️</button>
-    </div>
+  <div class="card">
+    <h3>Rainbow Kush #2</h3>
+    <p>🌈 Potency: 120</p>
+    <button>Stake</button>
   </div>
 
+  <h2>$SEEDS Earned: 420</h2>
+
+  <button>Claim Rewards</button>
+
 </div>
-
-<!-- 💰 TOKEN DASHBOARD -->
-<div class="dashboard">
-  <h2>$SEEDS: <span id="seeds">0</span></h2>
-  <button onclick="claimRewards()">Claim Rewards</button>
-</div>
-
-<script>
-  let walletAddress = null;
-
-  async function connectWallet() {
-    if ("solana" in window) {
-      const resp = await window.solana.connect();
-      walletAddress = resp.publicKey.toString();
-      document.getElementById("wallet").innerText = walletAddress;
-      loadSeeds();
-    } else {
-      alert("Install Phantom Wallet");
-    }
-  }
-
-  function loadSeeds() {
-    // mock value for now
-    let seeds = Math.floor(Math.random() * 1000);
-    document.getElementById("seeds").innerText = seeds;
-  }
-
-  function claimRewards() {
-    alert("💰 Rewards claimed!");
-    loadSeeds();
-  }
-</script>
 
 </body>
 </html>
