@@ -3,70 +3,148 @@
 <head>
   <title>Kush Kards 🌿</title>
 
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+
   <style>
     body {
       margin: 0;
       font-family: Arial;
-      background: linear-gradient(135deg, #0f172a, #065f46);
-      color: white;
+      color: #00ffcc;
+      background: radial-gradient(circle at top, #0f0f0f, #020202);
+      overflow-x: hidden;
+    }
+
+    /* 🌿
+CYBERPUNK GROW ROOM BACKGROUND */
+    body::before {
+      content: "";
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(circle, rgba(0,255,150,0.1) 10%, transparent 10%),
+        repeating-linear-gradient(
+          0deg,
+          rgba(0,255,150,0.05),
+          rgba(0,255,150,0.05) 1px,
+          transparent 1px,
+          transparent 40px
+        );
+      animation: pulse 6s infinite alternate;
+      z-index: -1;
+    }
+
+    @keyframes pulse {
+      from { opacity: 0.3; }
+      to { opacity: 0.8; }
+    }
+
+    h1 {
+      text-align: center;
+      text-shadow: 0 0 15px #00ffcc;
     }
 
     .container {
-      padding: 20px;
       text-align: center;
+      padding: 20px;
     }
 
-    .card {
-      background: #111;
-      border: 1px solid #22c55e;
-      border-radius: 10px;
-      padding: 15px;
-      margin: 10px;
-      display: inline-block;
-      width: 200px;
-    }
-
-    button {
-      background: #22c55e;
-      border: none;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
-      cursor: pointer;
+    .wallet-btn {
+      background: #00ffcc;
       color: black;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
       font-weight: bold;
     }
 
-    button:hover {
-      background: #16a34a;
+    .nft-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
     }
+
+    .card {
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid #00ffcc;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 10px;
+      width: 180px;
+      box-shadow: 0 0 15px #00ffcc33;
+    }
+
+    img {
+      width: 100%;
+      border-radius: 6px;
+    }
+
+    button {
+      background: #00ffcc;
+      color: black;
+      border: none;
+      padding: 8px;
+      margin-top: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
   </style>
 </head>
 
 <body>
 
 <div class="container">
-  <h1>🌿 Kush Kards Staking</h1>
+  <h1>🌿 Kush Kards
+Grow Lab</h1>
 
-  <p>Stake your NFTs. Earn $SEEDS. Grow your stash.</p>
+  <h3 id="wallet"></h3>
 
-  <div class="card">
-    <h3>OG Blaze #1</h3>
-    <p>🔥 Potency: 85</p>
-    <button>Stake</button>
-  </div>
-
-  <div class="card">
-    <h3>Rainbow Kush #2</h3>
-    <p>🌈 Potency: 120</p>
-    <button>Stake</button>
-  </div>
-
-  <h2>$SEEDS Earned: 420</h2>
-
-  <button>Claim Rewards</button>
-
+  <div class="nft-grid" id="nfts"></div>
 </div>
+
+<script>
+  let provider = null;
+
+  async function connectWallet() {
+    if ("solana" in window) {
+      provider = window.solana;
+      const resp = await provider.connect();
+      document.getElementById("wallet").innerText = "Connected: " + resp.publicKey.toString();
+      loadNFTs(resp.publicKey.toString());
+    } else {
+      alert("Install Phantom Wallet");
+    }
+  }
+
+  async function loadNFTs(wallet) {
+    const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+
+    const publicKey = new solanaWeb3.PublicKey(wallet);
+    const tokens = await connection.getParsedTokenAccountsByOwner(publicKey, {
+      programId: new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
+    });
+
+    const container = document.getElementById("nfts");
+    container.innerHTML = "";
+
+    tokens.value.slice(0, 6).forEach((t, i) => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <h4>NFT #${i + 1}</h4>
+        <p>Mint: ${t.account.data.parsed.info.mint.slice(0,6)}...</p>
+        <button>Stake</button>
+      `;
+
+      container.appendChild(card);
+    });
+  }
+</script>
 
 </body>
 </html>
+  <button class="wallet-btn" onclick="connectWallet()">Connect Phantom</button>
