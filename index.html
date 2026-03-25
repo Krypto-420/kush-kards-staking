@@ -3,59 +3,43 @@
 <html>
 <head>
   <title>Kush Kards 🌿</title>
-
   <style>
     body {
       margin: 0;
       font-family: Arial;
       background: linear-gradient(135deg, #0f172a, #065f46);
       color: white;
-    }
-
-    .container {
-      padding: 20px;
       text-align: center;
     }
+
+    .container { padding: 20px; }
 
     .card {
       background: #111;
       border: 1px solid #22c55e;
       border-radius: 12px;
-      padding: 20px;
-      margin: 15px;
+      padding: 15px;
+      margin: 10px;
       display: inline-block;
-      width: 220px;
+      width: 200px;
     }
 
+    img { width: 100%; border-radius: 10px; }
+
     button {
-      border: none;
       padding: 10px;
       margin-top: 10px;
       border-radius: 6px;
-      cursor: pointer;
-      color: black;
+      border: none;
+      background: #22c55e;
       font-weight: bold;
+      cursor: pointer;
       width: 100%;
     }
-
-    .locked { background: #16a34a; }
-    .unlocked { background: #4ade80; }
 
     button:disabled {
       background: gray;
       cursor: not-allowed;
-    }
-
-    .wallet-info {
-      margin-top: 20px;
-    }
-
-    #stakedList {
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid #22c55e;
-      border-radius: 10px;
-      background: #0f172a;
     }
   </style>
 </head>
@@ -64,149 +48,159 @@
 
 <div class="container">
   <h1>🌿 Kush Kards Staking</h1>
-  <p>Choose your staking strategy. Earn $SEEDS.</p>
 
-  <div class="card">
-    <h3>🔒 15 Day Lock</h3>
-    <p>1.5x Rewards</p>
-    <button id="stake15" class="locked" onclick="startStake('15', 15, 1.5)">Stake 15 Days</button>
-    <p id="timer15"></p>
-  </div>
+  <button id="connectBtn">Connect Wallet</button>
+  <p id="wallet"></p>
 
-  <div class="card">
-    <h3>🔒 30 Day Lock</h3>
-    <p>2x Rewards</p>
-    <button id="stake30" class="locked" onclick="startStake('30', 30, 2)">Stake 30 Days</button>
-    <p id="timer30"></p>
-  </div>
+  <h2>🖼 Your NFTs</h2>
+  <div id="nfts">Connect wallet...</div>
 
-  <div class="card">
-    <h3>🔓 Flexible</h3>
-    <p>1x Rewards</p>
-    <button class="unlocked" onclick="flexStake()">Flexible Stake</button>
-  </div>
+  <h2>📦 Staked NFTs</h2>
+  <div id="staked">None</div>
 
-  <h2 id="rewards">$SEEDS Earned: 420</h2>
-  <button onclick="claimRewards()">Claim Rewards</button>
+  <h2>💰 Rewards: <span id="rewards">0</span> SEEDS</h2>
+  <button onclick="claim()">Claim Rewards</button>
 
-  <!-- STAKED NFT DISPLAY -->
-  <div id="stakedList">
-    <h3>📦 Currently Staked</h3>
-    <div id="stakedItems">None</div>
-  </div>
+  <h2>⏳ Lock Staking</h2>
+  <button onclick="lockStake(15,1.5)">15 Days (1.5x)</button>
+  <button onclick="lockStake(30,2)">30 Days (2x)</button>
 
-  <!-- Wallet -->
-  <div class="wallet-info">
-    <button id="connectSolana">Connect Solana Wallet</button>
-    <div id="walletAddress"></div>
-    <div id="walletBalance"></div>
-    <div id="solTicker">Loading SOL price...</div>
-  </div>
+  <p id="timer"></p>
 </div>
 
-<!-- SOLANA -->
-<script type="module">
-  import { PhantomWalletAdapter } from "https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-wallets/dist/index.js";
-  import { Connection, clusterApiUrl, LAMPORTS_PER_SOL } from "https://cdn.jsdelivr.net/npm/@solana/web3.js@1.73.0/dist/index.min.js";
-
-  const wallet = new PhantomWalletAdapter();
-  const connection = new Connection(clusterApiUrl("mainnet-beta"));
-
-  document.getElementById("connectSolana").onclick = async () => {
-    await wallet.connect();
-    document.getElementById("walletAddress").innerText =
-      "Solana: " + wallet.publicKey.toString();
-
-    const bal = await connection.getBalance(wallet.publicKey);
-    document.getElementById("walletBalance").innerText =
-      "Balance: " + (bal / LAMPORTS_PER_SOL).toFixed(4) + " SOL";
-  };
-
-  async function updateSOLPrice() {
-    const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
-    const data = await res.json();
-    document.getElementById("solTicker").innerText =
-      "SOL Price: $" + data.solana.usd;
-  }
-
-  updateSOLPrice();
-  setInterval(updateSOLPrice, 15000);
-</script>
-
-<!-- STAKING SYSTEM -->
 <script>
-  let totalRewards = 420;
-  let stakes = JSON.parse(localStorage.getItem("stakes")) || {};
+let wallet = null;
+let nfts = [];
+let staked = JSON.parse(localStorage.getItem("staked")) || [];
+let rewards = 0;
+let lock = JSON.parse(localStorage.getItem("lock")) || null;
 
-  function save() {
-    localStorage.setItem("stakes", JSON.stringify(stakes));
+// CONNECT WALLET
+document.getElementById("connectBtn").onclick = async () => {
+  if (!window.solana || !window.solana.isPhantom) {
+    alert("Install Phantom Wallet");
+    return;
   }
 
-  function startStake(id, days, multiplier) {
-    const endTime = Date.now() + days * 24 * 60 * 60 * 1000;
+  const res = await window.solana.connect();
+  wallet = res.publicKey.toString();
+  document.getElementById("wallet").innerText = wallet;
 
-    stakes[id] = {
-      end: endTime,
-      multiplier
-    };
+  loadNFTs();
+  renderStaked();
+};
 
-    save();
-    updateUI();
-  }
+// LOAD NFTS
+async function loadNFTs() {
+  const container = document.getElementById("nfts");
+  container.innerHTML = "Loading...";
 
-  function flexStake() {
-    totalRewards += 10;
-    updateRewards();
-    alert("Flexible staking 🌿 +10 SEEDS");
-  }
+  try {
+    const res = await fetch(
+      `https://api.helius.xyz/v0/addresses/${wallet}/nfts?api-key=YOUR_API_KEY`
+    );
+    nfts = await res.json();
 
-  function updateRewards() {
-    document.getElementById("rewards").innerText =
-      "$SEEDS Earned: " + totalRewards.toFixed(2);
-  }
+    container.innerHTML = "";
 
-  function claimRewards() {
-    alert("Claimed " + totalRewards + " SEEDS 🌿");
-    totalRewards = 0;
-    updateRewards();
-  }
+    nfts.forEach((nft, i) => {
+      const img = nft.content?.links?.image || "";
+      const name = nft.content?.metadata?.name || "Unnamed";
 
-  function updateUI() {
-    let list = "";
+      const div = document.createElement("div");
+      div.className = "card";
 
-    ["15", "30"].forEach(id => {
-      const stake = stakes[id];
-      const btn = document.getElementById("stake" + id);
-      const timer = document.getElementById("timer" + id);
+      div.innerHTML = `
+        <img src="${img}">
+        <p>${name}</p>
+        <button onclick="stake(${i})">Stake</button>
+      `;
 
-      if (stake) {
-        const timeLeft = stake.end - Date.now();
-
-        if (timeLeft > 0) {
-          btn.disabled = true;
-
-          const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
-
-          timer.innerText = `⏳ ${days}d ${hours}h remaining`;
-          list += `<p>🔒 ${id}-Day Lock Active</p>`;
-        } else {
-          btn.disabled = false;
-          timer.innerText = "✅ Ready to claim";
-          totalRewards += 100 * stake.multiplier;
-          delete stakes[id];
-          save();
-        }
-      }
+      container.appendChild(div);
     });
 
-    document.getElementById("stakedItems").innerHTML =
-      list || "None";
+  } catch {
+    container.innerHTML = "Error loading NFTs";
+  }
+}
+
+// STAKE NFT
+function stake(i) {
+  staked.push(nfts[i]);
+  localStorage.setItem("staked", JSON.stringify(staked));
+  renderStaked();
+}
+
+// RENDER STAKED
+function renderStaked() {
+  const container = document.getElementById("staked");
+
+  if (staked.length === 0) {
+    container.innerHTML = "None";
+    return;
   }
 
-  setInterval(updateUI, 1000);
-  updateUI();
-  updateRewards();
+  container.innerHTML = "";
+
+  staked.forEach((nft, i) => {
+    const img = nft.content?.links?.image || "";
+    const name = nft.content?.metadata?.name || "NFT";
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <img src="${img}">
+      <p>${name}</p>
+      <button onclick="unstake(${i})">Unstake</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+// UNSTAKE
+function unstake(i) {
+  staked.splice(i,1);
+  localStorage.setItem("staked", JSON.stringify(staked));
+  renderStaked();
+}
+
+// LOCK STAKING
+function lockStake(days, mult) {
+  lock = {
+    end: Date.now() + days * 86400000,
+    mult
+  };
+  localStorage.setItem("lock", JSON.stringify(lock));
+}
+
+// TIMER + REWARDS
+setInterval(() => {
+  if (!lock) return;
+
+  const left = lock.end - Date.now();
+
+  if (left > 0) {
+    const d = Math.floor(left / 86400000);
+    const h = Math.floor((left / 3600000) % 24);
+    document.getElementById("timer").innerText =
+      `⏳ ${d}d ${h}h remaining`;
+  } else {
+    rewards += 100 * lock.mult;
+    document.getElementById("rewards").innerText = rewards;
+    lock = null;
+    localStorage.removeItem("lock");
+    document.getElementById("timer").innerText = "✅ Complete";
+  }
+}, 1000);
+
+// CLAIM
+function claim() {
+  alert("Claimed " + rewards + " SEEDS 🌿");
+  rewards = 0;
+  document.getElementById("rewards").innerText = rewards;
+}
 </script>
 
 </body>
