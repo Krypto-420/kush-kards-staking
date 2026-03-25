@@ -41,6 +41,18 @@
     button:hover {
       background: #16a34a;
     }
+
+    .wallet-info {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    #solTicker {
+      margin-top: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
   </style>
 </head>
 
@@ -67,7 +79,57 @@
 
   <button>Claim Rewards</button>
 
+  <!-- Solana Wallet Connect -->
+  <div class="wallet-info">
+    <button id="connectSolana">Connect Solana Wallet</button>
+    <div id="walletAddress"></div>
+    <div id="walletBalance"></div>
+    <div id="solTicker">Loading SOL price...</div>
+  </div>
 </div>
+
+<!-- Scripts -->
+<script type="module">
+  import { PhantomWalletAdapter } from "https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-wallets/dist/index.js";
+  import { Connection, clusterApiUrl, LAMPORTS_PER_SOL } from "https://cdn.jsdelivr.net/npm/@solana/web3.js@1.73.0/dist/index.min.js";
+
+  const wallet = new PhantomWalletAdapter();
+  const connection = new Connection(clusterApiUrl("mainnet-beta"));
+
+  async function updateBalance() {
+    if (wallet.publicKey) {
+      const balanceLamports = await connection.getBalance(wallet.publicKey);
+      const balanceSOL = balanceLamports / LAMPORTS_PER_SOL;
+      document.getElementById("walletBalance").innerText = "Balance: " + balanceSOL.toFixed(4) + " SOL";
+    }
+  }
+
+  document.getElementById("connectSolana").addEventListener("click", async () => {
+    try {
+      await wallet.connect();
+      document.getElementById("walletAddress").innerText = "Solana: " + wallet.publicKey.toString();
+      await updateBalance();
+    } catch (err) {
+      console.log(err);
+      alert("Failed to connect Solana wallet");
+    }
+  });
+
+  // SOL Price Ticker
+  async function updateSOLPrice() {
+    try {
+      const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
+      const data = await res.json();
+      document.getElementById("solTicker").innerText = "SOL Price: $" + data.solana.usd;
+    } catch (err) {
+      console.log(err);
+      document.getElementById("solTicker").innerText = "Error fetching price";
+    }
+  }
+
+  updateSOLPrice();
+  setInterval(updateSOLPrice, 15000); // refresh every 15 seconds
+</script>
 
 </body>
 </html>
